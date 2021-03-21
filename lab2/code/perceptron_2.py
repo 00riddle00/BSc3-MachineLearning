@@ -41,11 +41,7 @@ class NeuralNetwork():
                 output = self.think(train_inputs, activation_function)
                 error = train_outputs - output
 
-                # adjustments = np.dot(
-                    # train_inputs.T, error * self.sigmoid_derivative(output))
-
                 adjustments = np.dot(train_inputs.T, error * learning_rate)
-
                 self.synaptic_weights = self.synaptic_weights + adjustments
 
     def think(self, inputs, activation_function):
@@ -64,20 +60,21 @@ if __name__ == '__main__':
     # =================================================================
     # changeable parameters
     # =================================================================
+
     # classification task is one of {1,2}
     task = 1
-    DEBUG_FLAG = True
+    DEBUG_FLAG = False
 
     # activation function is one of {'threshold', 'sigmoid'}
     activation_function = 'threshold'
     learning_rate = 1
-    iterations = 10000
+    iterations = 135
     epochs = 1
-    # =================================================================
 
     # =================================================================
     # Reading from a file
     # =================================================================
+
     data = np.genfromtxt('dataset/iris.data', delimiter=',')
     data[:, 4] = 1
 
@@ -104,30 +101,68 @@ if __name__ == '__main__':
     # =================================================================
     # Setting training & test data
     # =================================================================
+
     if (task == 1):
+
+        if iterations > 135:
+            raise ValueError('Maximum iteration count in Task 1 is 135')
+            exit(1)
+
         # -------------------------------------------------------------
         # Classification task no.1 (Setosa vs. Versicolor_&_Virginica)
         # -------------------------------------------------------------
-        given_train_inputs = np.concatenate((
-            data_train_setosa, data_train_versicolor_and_virginica))
 
-        given_train_outputs = np.concatenate((
-            np.zeros(45), np.ones(90))).reshape(1, -1).T
+        # -------------------- Training data --------------------------
+
+        given_train_inputs = []
+
+        # mix the data (every second element from another class)
+        for element in zip(data_train_setosa, data_train_versicolor_and_virginica[:45]):
+            given_train_inputs.extend(element)
+
+        given_train_inputs = np.concatenate((np.array(given_train_inputs), data_train_versicolor_and_virginica[45:]))
+
+        # classes should correspond to the input elements
+        given_train_outputs = np.zeros(90)
+
+        # every second element is of class 1
+        given_train_outputs[1::2] = 1
+        given_train_outputs = np.concatenate((given_train_outputs, np.ones(45))).reshape(1, -1).T
+
+        # -------------------- Testing data --------------------------
 
         given_test_inputs = np.concatenate((
             data_test_setosa, data_test_versicolor_and_virginica))
 
         given_test_outputs = np.concatenate((
             np.zeros(5), np.ones(10))).reshape(1, -1).T
+
     elif (task == 2):
+
+        if iterations > 90:
+            raise ValueError('Maximum iteration count in Task 1 is 90')
+            exit(1)
+
         # -------------------------------------------------------------
         # Classification task no.2 (Versicolor vs. Virginica)
         # -------------------------------------------------------------
-        given_train_inputs = np.concatenate((
-            data_train_versicolor, data_train_virginica))
 
-        given_train_outputs = np.concatenate((
-            np.zeros(45), np.ones(45))).reshape(1, -1).T
+        # -------------------- Training data --------------------------
+
+        given_train_inputs = []
+
+        for element in zip(data_train_versicolor, data_train_virginica):
+            given_train_inputs.extend(element)
+
+        given_train_inputs = np.array(given_train_inputs)
+
+        given_train_outputs = np.zeros(90)
+
+        # every second element is of class 1
+        given_train_outputs[1::2] = 1
+        given_train_outputs = given_train_outputs.reshape(1, -1).T
+
+        # -------------------- Testing data --------------------------
 
         given_test_inputs = np.concatenate((
             data_test_versicolor, data_test_virginica))
@@ -187,8 +222,8 @@ if __name__ == '__main__':
     debug(f'Training results (summary):\n {train_results}')
     debug(f'Test results (summary):\n {test_results}')
 
-    train_accuracy = (train_results[0.0] + train_results[2.0]) / len(train_outputs)
-    test_accuracy = (test_results[0.0] + test_results[2.0]) / len(test_outputs)
+    train_accuracy = ( train_results.get(0.0, 0) + train_results.get(2.0, 0) ) / len(train_outputs)
+    test_accuracy = ( test_results.get(0.0, 0) + test_results.get(2.0, 0) ) / len(test_outputs)
 
     print('==============================')
 
