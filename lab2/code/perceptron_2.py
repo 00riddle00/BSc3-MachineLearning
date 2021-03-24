@@ -2,10 +2,12 @@
 
 import numpy as np
 
+
 def debug(text):
     global debug
     if DEBUG_FLAG:
         print(text)
+
 
 class NeuralNetwork():
 
@@ -25,9 +27,6 @@ class NeuralNetwork():
         sig = np.maximum(sig, 0.0001)  # Set lower bound
         return sig
 
-    def sigmoid_derivative(self, x):
-        return x * (1 - x)
-
     def train(self,
               train_inputs,
               train_outputs,
@@ -36,13 +35,27 @@ class NeuralNetwork():
               train_iterations,
               train_epochs):
 
-        for epoch in range(train_epochs):
-            for iteration in range(train_iterations):
-                output = self.think(train_inputs, activation_function)
-                error = train_outputs - output
+        train_inputs_size = train_inputs.shape[0]
+        train_outputs_size = train_outputs.shape[0]
 
-                adjustments = np.dot(train_inputs.T, error * learning_rate)
-                self.synaptic_weights = self.synaptic_weights + adjustments
+        if train_inputs_size != train_outputs_size:
+            raise ValueError('ERROR: Train input size (number of objects) is '
+                             'not equal to train output size')
+            exit(1)
+        elif train_iterations > train_inputs_size:
+            raise ValueError('ERROR: Maximum iteration count is greater than '
+                             'number of data objects given')
+            exit(1)
+
+        train_inputs = train_inputs[:train_iterations]
+        train_outputs = train_outputs[:train_iterations]
+
+        for epoch in range(train_epochs):
+            output = self.think(train_inputs, activation_function)
+            error = train_outputs - output
+
+            adjustments = np.dot(train_inputs.T, error * learning_rate)
+            self.synaptic_weights = self.synaptic_weights + adjustments
 
     def think(self, inputs, activation_function):
         inputs = inputs.astype(float)
@@ -56,21 +69,8 @@ class NeuralNetwork():
 
         return output
 
-if __name__ == '__main__':
-    # =================================================================
-    # changeable parameters
-    # =================================================================
 
-    # classification task is one of {1,2}
-    task = 2
-    DEBUG_FLAG = False
-
-    # activation function is one of {'threshold', 'sigmoid'}
-    activation_function = 'threshold'
-    learning_rate = 1
-    iterations = 1
-    epochs = 10000
-
+def get_data(task):
     # =================================================================
     # Reading from a file
     # =================================================================
@@ -104,10 +104,6 @@ if __name__ == '__main__':
 
     if (task == 1):
 
-        if iterations > 135:
-            raise ValueError('Maximum iteration count in Task 1 is 135')
-            exit(1)
-
         # -------------------------------------------------------------
         # Classification task no.1 (Setosa vs. Versicolor_&_Virginica)
         # -------------------------------------------------------------
@@ -117,31 +113,34 @@ if __name__ == '__main__':
         given_train_inputs = []
 
         # mix the data (every second element from another class)
-        for element in zip(data_train_setosa, data_train_versicolor_and_virginica[:45]):
+        for element in zip(
+            data_train_setosa, data_train_versicolor_and_virginica[:45]):
+
             given_train_inputs.extend(element)
 
-        given_train_inputs = np.concatenate((np.array(given_train_inputs), data_train_versicolor_and_virginica[45:]))
+        given_train_inputs = np.concatenate((
+            np.array(given_train_inputs),
+            data_train_versicolor_and_virginica[45:]))
 
         # classes should correspond to the input elements
         given_train_outputs = np.zeros(90)
 
         # every second element is of class 1
         given_train_outputs[1::2] = 1
-        given_train_outputs = np.concatenate((given_train_outputs, np.ones(45))).reshape(1, -1).T
+
+        given_train_outputs = np.concatenate((
+            given_train_outputs, np.ones(45))).reshape(1, -1).T
 
         # -------------------- Testing data --------------------------
 
         given_test_inputs = np.concatenate((
-            data_test_setosa, data_test_versicolor_and_virginica))
+            data_test_setosa,
+            data_test_versicolor_and_virginica))
 
         given_test_outputs = np.concatenate((
             np.zeros(5), np.ones(10))).reshape(1, -1).T
 
     elif (task == 2):
-
-        if iterations > 90:
-            raise ValueError('Maximum iteration count in Task 1 is 90')
-            exit(1)
 
         # -------------------------------------------------------------
         # Classification task no.2 (Versicolor vs. Virginica)
@@ -169,9 +168,35 @@ if __name__ == '__main__':
 
         given_test_outputs = np.concatenate((
             np.zeros(5), np.ones(5))).reshape(1, -1).T
+
     else:
         raise ValueError('Incorrect task specified')
 
+    return [given_train_inputs,
+            given_train_outputs,
+            given_test_inputs,
+            given_test_outputs]
+
+
+if __name__ == '__main__':
+    DEBUG_FLAG = True
+
+    # classification task is one of {1,2}
+    task = 2
+
+    [given_train_inputs,
+     given_train_outputs,
+     given_test_inputs,
+     given_test_outputs] = get_data(task)
+
+    # =================================================================
+    # changeable parameters
+    # =================================================================
+    # activation function is one of {'threshold', 'sigmoid'}
+    activation_function = 'threshold'
+    learning_rate = 1
+    iterations = 90
+    epochs = 10000
     # =================================================================
 
     neural_network = NeuralNetwork()
@@ -186,8 +211,11 @@ if __name__ == '__main__':
                          iterations,
                          epochs)
 
-    train_outputs = neural_network.think(given_train_inputs, activation_function)
-    test_outputs = neural_network.think(given_test_inputs, activation_function)
+    train_outputs = neural_network.think(
+        given_train_inputs, activation_function)
+
+    test_outputs = neural_network.think(
+        given_test_inputs, activation_function)
 
     debug(f'Outputs after training:\n {train_outputs}')
     debug(f'Test outputs:\n {test_outputs}')
@@ -195,10 +223,14 @@ if __name__ == '__main__':
     # let NaN mean that the item was not assigned to any class
     if activation_function == 'sigmoid':
         train_outputs = np.array([
-            1 if xi > 0.9 else 0 if xi < 0.1 else np.nan for xi in train_outputs])
+                 1 if xi > 0.9
+            else 0 if xi < 0.1
+            else np.nan for xi in train_outputs])
 
         test_outputs = np.array([
-            1 if xi > 0.9 else 0 if xi < 0.1 else np.nan for xi in test_outputs])
+                 1 if xi > 0.9
+            else 0 if xi < 0.1
+            else np.nan for xi in test_outputs])
 
     train_results = np.array([sum(x) for x in zip(
         given_train_outputs.flatten(), train_outputs)])
@@ -213,20 +245,33 @@ if __name__ == '__main__':
     # misclassification has occured.
     # if, however, the sum is nan, the item was not assigned to any class
     # else, the sum values of 0 and 2 means correct classification.
-    unique, counts = np.unique(train_results[~np.isnan(train_results)], return_counts=True)
+    #
+    unique, counts = np.unique(
+        train_results[~np.isnan(train_results)], return_counts=True)
+
     train_results = dict(zip(unique, counts))
 
-    unique, counts = np.unique(test_results[~np.isnan(test_results)], return_counts=True)
+    unique, counts = np.unique(
+        test_results[~np.isnan(test_results)], return_counts=True)
+
     test_results = dict(zip(unique, counts))
 
     debug(f'Training results (summary):\n {train_results}')
     debug(f'Test results (summary):\n {test_results}')
 
+    true_assignments_train = \
+        train_results.get(0.0, 0) + train_results.get(2.0, 0)
+
+    true_assignments_test = \
+        test_results.get(0.0, 0) + test_results.get(2.0, 0)
+
+    train_accuracy = true_assignments_train / len(train_outputs)
+    test_accuracy = true_assignments_test / len(test_outputs)
+
     train_accuracy = ( train_results.get(0.0, 0) + train_results.get(2.0, 0) ) / len(train_outputs)
     test_accuracy = ( test_results.get(0.0, 0) + test_results.get(2.0, 0) ) / len(test_outputs)
 
     print('==============================')
-
     print('Synaptic weights after training: ')
     print(np.round(neural_network.synaptic_weights, 2))
 
@@ -242,4 +287,3 @@ if __name__ == '__main__':
     print('Training accuracy: {:.2f}'.format(train_accuracy))
     print('Testing accuracy: {:.2f}'.format(test_accuracy))
     print('==============================')
-
