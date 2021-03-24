@@ -33,10 +33,12 @@ class NeuralNetwork():
         train_outputs_size = train_outputs.shape[0]
 
         if train_inputs_size != train_outputs_size:
-            raise ValueError('ERROR: Train input size (number of objects) is not equal to train output size')
+            raise ValueError('ERROR: Train input size (number of objects) is '
+                             'not equal to train output size')
             exit(1)
         elif train_iterations > train_inputs_size:
-            raise ValueError('ERROR: Maximum iteration count is greater than number of data objects given')
+            raise ValueError('ERROR: Maximum iteration count is greater than '
+                             'number of data objects given')
             exit(1)
 
         train_inputs = train_inputs[:train_iterations]
@@ -60,6 +62,7 @@ class NeuralNetwork():
             exit(1)
 
         return output
+
 
 def get_data(task):
     # =================================================================
@@ -104,22 +107,29 @@ def get_data(task):
         given_train_inputs = []
 
         # mix the data (every second element from another class)
-        for element in zip(data_train_setosa, data_train_versicolor_and_virginica[:45]):
+        for element in zip(
+            data_train_setosa, data_train_versicolor_and_virginica[:45]):
+
             given_train_inputs.extend(element)
 
-        given_train_inputs = np.concatenate((np.array(given_train_inputs), data_train_versicolor_and_virginica[45:]))
+        given_train_inputs = np.concatenate((
+            np.array(given_train_inputs),
+            data_train_versicolor_and_virginica[45:]))
 
         # classes should correspond to the input elements
         given_train_outputs = np.zeros(90)
 
         # every second element is of class 1
         given_train_outputs[1::2] = 1
-        given_train_outputs = np.concatenate((given_train_outputs, np.ones(45))).reshape(1, -1).T
+
+        given_train_outputs = np.concatenate((
+            given_train_outputs, np.ones(45))).reshape(1, -1).T
 
         # -------------------- Testing data --------------------------
 
         given_test_inputs = np.concatenate((
-            data_test_setosa, data_test_versicolor_and_virginica))
+            data_test_setosa,
+            data_test_versicolor_and_virginica))
 
         given_test_outputs = np.concatenate((
             np.zeros(5), np.ones(10))).reshape(1, -1).T
@@ -152,31 +162,42 @@ def get_data(task):
 
         given_test_outputs = np.concatenate((
             np.zeros(5), np.ones(5))).reshape(1, -1).T
+
     else:
         raise ValueError('Incorrect task specified')
 
-    return [given_train_inputs, given_train_outputs, given_test_inputs, given_test_outputs]
+    return [given_train_inputs,
+            given_train_outputs,
+            given_test_inputs,
+            given_test_outputs]
 
 
 def run(init_weights):
     neural_network.synaptic_weights = init_weights
 
     neural_network.train(given_train_inputs,
-                        given_train_outputs,
-                        learning_rate,
-                        activation_function,
-                        iterations,
-                        epochs)
+                         given_train_outputs,
+                         learning_rate,
+                         activation_function,
+                         iterations,
+                         epochs)
 
-    train_outputs = neural_network.think(given_train_inputs, activation_function)
-    test_outputs = neural_network.think(given_test_inputs, activation_function)
+    train_outputs = neural_network.think(
+        given_train_inputs, activation_function)
+
+    test_outputs = neural_network.think(
+        given_test_inputs, activation_function)
 
     if activation_function == 'sigmoid':
         train_outputs = np.array([
-            1 if xi > 0.9 else 0 if xi < 0.1 else np.nan for xi in train_outputs])
+                 1 if xi > 0.9
+            else 0 if xi < 0.1
+            else np.nan for xi in train_outputs])
 
         test_outputs = np.array([
-            1 if xi > 0.9 else 0 if xi < 0.1 else np.nan for xi in test_outputs])
+                 1 if xi > 0.9
+            else 0 if xi < 0.1
+            else np.nan for xi in test_outputs])
 
     train_results = np.array([sum(x) for x in zip(
         given_train_outputs.flatten(), train_outputs)])
@@ -184,23 +205,44 @@ def run(init_weights):
     test_results = np.array([sum(x) for x in zip(
         given_test_outputs.flatten(), test_outputs)])
 
-    unique, counts = np.unique(train_results[~np.isnan(train_results)], return_counts=True)
+    unique, counts = np.unique(
+        train_results[~np.isnan(train_results)], return_counts=True)
+
     train_results = dict(zip(unique, counts))
 
-    unique, counts = np.unique(test_results[~np.isnan(test_results)], return_counts=True)
+    unique, counts = np.unique(
+        test_results[~np.isnan(test_results)], return_counts=True)
+
     test_results = dict(zip(unique, counts))
+
+    true_assignments_train = \
+        train_results.get(0.0, 0) + train_results.get(2.0, 0)
+
+    true_assignments_test = \
+        test_results.get(0.0, 0) + test_results.get(2.0, 0)
+
+    train_accuracy = true_assignments_train / len(train_outputs)
+    test_accuracy = true_assignments_test / len(test_outputs)
 
     train_accuracy = ( train_results.get(0.0, 0) + train_results.get(2.0, 0) ) / len(train_outputs)
     test_accuracy = ( test_results.get(0.0, 0) + test_results.get(2.0, 0) ) / len(test_outputs)
 
-    print(f'{activation_function},{learning_rate:.{learning_rate_decimal_places}f},{iterations},{epochs},{train_accuracy:.2f},{test_accuracy:.2f}')
+    print(f'{activation_function},'
+          f'{learning_rate:.{learning_rate_decimal_places}f},'
+          f'{iterations},'
+          f'{epochs},'
+          f'{train_accuracy:.2f},'
+          f'{test_accuracy:.2f}')
 
 
 if __name__ == '__main__':
     # classification task is one of {1,2}
     task = 2
 
-    [given_train_inputs, given_train_outputs, given_test_inputs, given_test_outputs] = get_data(task)
+    [given_train_inputs,
+     given_train_outputs,
+     given_test_inputs,
+     given_test_outputs] = get_data(task)
 
     # activation function is one of {'threshold', 'sigmoid'}
     activation_function = 'threshold'
