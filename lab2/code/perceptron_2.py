@@ -62,14 +62,14 @@ if __name__ == '__main__':
     # =================================================================
 
     # classification task is one of {1,2}
-    task = 1
+    task = 2
     DEBUG_FLAG = False
 
     # activation function is one of {'threshold', 'sigmoid'}
     activation_function = 'threshold'
     learning_rate = 1
-    iterations = 135
-    epochs = 1
+    iterations = 1
+    epochs = 10000
 
     # =================================================================
     # Reading from a file
