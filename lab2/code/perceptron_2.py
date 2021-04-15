@@ -2,7 +2,6 @@
 
 import numpy as np
 
-
 def debug(text):
     global debug
     if DEBUG_FLAG:
@@ -32,29 +31,38 @@ class NeuralNetwork():
               train_outputs,
               learning_rate,
               activation_function,
-              train_iterations,
-              train_epochs):
+              train_iterations):
 
         train_inputs_size = train_inputs.shape[0]
         train_outputs_size = train_outputs.shape[0]
 
-        if train_inputs_size != train_outputs_size:
-            raise ValueError('ERROR: Train input size (number of objects) is '
-                             'not equal to train output size')
-            exit(1)
-        elif train_iterations > train_inputs_size:
-            raise ValueError('ERROR: Maximum iteration count is greater than '
-                             'number of data objects given')
-            exit(1)
+        tr_inputs = np.empty((0,5))
+        tr_outputs = np.empty((0,1))
 
-        train_inputs = train_inputs[:train_iterations]
-        train_outputs = train_outputs[:train_iterations]
+        epochs = train_iterations // train_inputs_size
+        iterations_left = train_iterations % train_inputs_size
 
-        for epoch in range(train_epochs):
-            output = self.think(train_inputs, activation_function)
-            error = train_outputs - output
+        for i in range(epochs):
+            tr_inputs = np.concatenate((tr_inputs, train_inputs))
+            tr_outputs = np.concatenate((tr_outputs, train_outputs))
 
-            adjustments = np.dot(train_inputs.T, error * learning_rate)
+        tr_inputs = np.concatenate((tr_inputs, train_inputs[:iterations_left]))
+        tr_outputs = np.concatenate((tr_outputs, train_outputs[:iterations_left]))
+
+        size = int(tr_inputs.size / 5)
+
+        for i in range(size):
+            tr_input = tr_inputs[:(i+1)]
+            tr_inputs = tr_inputs[(i+1):]
+
+            tr_output = tr_outputs[:(i+1)]
+            tr_outputs = tr_outputs[(i+1):]
+
+            output = self.think(tr_input, activation_function)
+            # error is a signed number meaning the needed change
+            error = tr_output - output
+
+            adjustments = np.dot(tr_input.T, error * learning_rate)
             self.synaptic_weights = self.synaptic_weights + adjustments
 
     def think(self, inputs, activation_function):
@@ -178,47 +186,20 @@ def get_data(task):
             given_test_outputs]
 
 
-if __name__ == '__main__':
-    DEBUG_FLAG = True
-
-    # classification task is one of {1,2}
-    task = 2
-
-    [given_train_inputs,
-     given_train_outputs,
-     given_test_inputs,
-     given_test_outputs] = get_data(task)
-
-    # =================================================================
-    # changeable parameters
-    # =================================================================
-    # activation function is one of {'threshold', 'sigmoid'}
-    activation_function = 'threshold'
-    learning_rate = 1
-    iterations = 90
-    epochs = 10000
-    # =================================================================
-
-    neural_network = NeuralNetwork()
-
-    debug('Random starting synaptic weights: ')
-    debug(np.round(neural_network.synaptic_weights, 2))
+def run(init_weights):
+    neural_network.synaptic_weights = init_weights
 
     neural_network.train(given_train_inputs,
                          given_train_outputs,
                          learning_rate,
                          activation_function,
-                         iterations,
-                         epochs)
+                         iterations)
 
     train_outputs = neural_network.think(
         given_train_inputs, activation_function)
 
     test_outputs = neural_network.think(
         given_test_inputs, activation_function)
-
-    debug(f'Outputs after training:\n {train_outputs}')
-    debug(f'Test outputs:\n {test_outputs}')
 
     # let NaN mean that the item was not assigned to any class
     if activation_function == 'sigmoid':
@@ -238,9 +219,6 @@ if __name__ == '__main__':
     test_results = np.array([sum(x) for x in zip(
         given_test_outputs.flatten(), test_outputs)])
 
-    debug(f'Training results:\n {train_results}')
-    debug(f'Test results:\n {test_results}')
-
     # if the sum of the given class and resulting class is 1, that means
     # misclassification has occured.
     # if, however, the sum is nan, the item was not assigned to any class
@@ -256,9 +234,6 @@ if __name__ == '__main__':
 
     test_results = dict(zip(unique, counts))
 
-    debug(f'Training results (summary):\n {train_results}')
-    debug(f'Test results (summary):\n {test_results}')
-
     true_assignments_train = \
         train_results.get(0.0, 0) + train_results.get(2.0, 0)
 
@@ -271,19 +246,33 @@ if __name__ == '__main__':
     train_accuracy = ( train_results.get(0.0, 0) + train_results.get(2.0, 0) ) / len(train_outputs)
     test_accuracy = ( test_results.get(0.0, 0) + test_results.get(2.0, 0) ) / len(test_outputs)
 
-    print('==============================')
-    print('Synaptic weights after training: ')
-    print(np.round(neural_network.synaptic_weights, 2))
+    print(f'{iterations},'
+          f'{train_accuracy:.2f},'
+          f'{test_accuracy:.2f}')
 
-    print('==============================')
-    print('Parameters')
-    print('==============================')
-    print('Activation function:', activation_function)
-    print('Learning rate:', learning_rate)
-    print('Epochs:', epochs)
-    print('Iterations per epoch:', iterations)
-    print('==============================')
 
-    print('Training accuracy: {:.2f}'.format(train_accuracy))
-    print('Testing accuracy: {:.2f}'.format(test_accuracy))
-    print('==============================')
+if __name__ == '__main__':
+    # classification task is one of {1,2}
+    task = 2
+
+    [given_train_inputs,
+     given_train_outputs,
+     given_test_inputs,
+     given_test_outputs] = get_data(task)
+
+    # =================================================================
+    # changeable parameters
+    # =================================================================
+    # activation function is one of {'threshold', 'sigmoid'}
+    activation_function = 'threshold'
+    learning_rate = 1.0
+    iterations_list = [2,10,20,30,40,50,60,70,80,90,100]
+    # =================================================================
+
+    neural_network = NeuralNetwork()
+    init_weights = neural_network.synaptic_weights
+
+    iterations = 0
+    for i in iterations_list:
+        iterations = i
+        run(init_weights)
