@@ -205,6 +205,21 @@ def som_test(Y, Y_labels, M_t, kx, ky):
     return results
 
 
+def som_quantization_error(X, M_t, kx, ky):
+    q_error = 0
+    m = X.shape[0]
+    for l in range(1, m + 1):
+        distances = np.zeros((kx, ky))
+        for i in range(1, kx + 1):
+            for j in range(1, ky + 1):
+                distances[ind(i)][ind(j)] = \
+                    euclidean_distance(M_t[ind(i)][ind(j)], X[ind(l)])
+        c = np.unravel_index(distances.argmin(), distances.shape)
+        q_error += distances[c[0]][c[1]]
+
+    return q_error / m
+
+
 def som_draw(results, kx, ky):
     R = [['' for y in range(ky)] for x in range(kx)]
 
@@ -276,6 +291,8 @@ if __name__ == '__main__':
     # SOM in action
     # ------------------------------------
     M_trained = som_train(X, M, epochs, kx, ky)
+    q_error = som_quantization_error(X, M_trained, kx, ky)
+    print('Quantization error: ', q_error)
     results = som_test(Y, Y_labels, M_trained, kx, ky)
-    print('Resulting grid:\n')
+    print('\nResulting grid:\n')
     som_draw(results, kx, ky)
