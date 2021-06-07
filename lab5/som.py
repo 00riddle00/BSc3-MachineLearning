@@ -13,6 +13,7 @@ global RANDOM_SEED
 global SHOW_CLASS_NAMES
 global NEIGHBOURS
 
+
 # ================
 # Helper functions
 # ================
@@ -297,7 +298,7 @@ if __name__ == '__main__':
     # ------------------------------------
     # Changeable parameters
     # ------------------------------------
-    # Grid rows and columns.
+    # Grid size (rows and columns).
     # Can be a rectangle as well.
     kx = 8
     ky = 8
@@ -315,15 +316,20 @@ if __name__ == '__main__':
     # One of 'simple_div', 'simple_div_sub', 'power'
     ALPHA_FN_KIND = 'simple_div'
 
-    # Visualization parameter
+    # choose for different random
+    # filling of the initial grid
+    RANDOM_SEED = 0
+
+    # Visualization parameters
+
     # Set it to true to show input vectors' class names
     # in the resulting grid. Otherwise the number of
     # the input vector will be shown.
     SHOW_CLASS_NAMES = True
 
-    # choose for different random
-    # filling of the initial grid
-    RANDOM_SEED = 0
+    # Set it to true to print out SOM neurons' weights
+    # and winner neurons for every input vector
+    VERBOSE_OUTPUT = True
 
     # ------------------------------------
     # Set up
@@ -344,11 +350,23 @@ if __name__ == '__main__':
     # ------------------------------------
     M_trained = som_train(X, M, epochs, kx, ky)
 
+    results = som_test(Y, Y_labels, M_trained, kx, ky)
+
+    print('-' * 40)
+    print('Parameters:')
+    print('-' * 40)
+    print('Epochs: ', epochs)
+    print(f'Grid size: {kx}x{ky}')
+    print('h (neighbourhood function) type: ', H_FN_KIND)
+    print('alpha function type: ', ALPHA_FN_KIND)
+    print('Starting vicinities: ', VICINITIES)
+    print('Random seed: ', RANDOM_SEED)
+    print('-' * 40)
+
     q_error, t_error = som_evaluate(X, M_trained, kx, ky)
     print('Quantization error: ', q_error)
     print('Topographic error: ', t_error)
-
-    results = som_test(Y, Y_labels, M_trained, kx, ky)
+    print('-' * 40)
 
     print('\nResulting grid:')
     if SHOW_CLASS_NAMES:
@@ -357,3 +375,18 @@ if __name__ == '__main__':
         print("(showing input vectors' numbers)\n")
 
     som_draw(results, kx, ky, show_class_names=SHOW_CLASS_NAMES)
+
+    if VERBOSE_OUTPUT:
+        print()
+        print('.' * 40)
+        print('Training statistics:')
+        print('.' * 40)
+        print()
+        print('Grid after training:\n')
+        print(M)
+        print()
+
+        print("Winner neurons together with a list of pairs indicating\n"
+              "associated input vectors' classes and their numbers:\n")
+        for winner_neuron in results:
+            print(f'{winner_neuron}: {results[winner_neuron]}')
