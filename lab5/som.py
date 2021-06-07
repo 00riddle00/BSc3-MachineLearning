@@ -125,6 +125,7 @@ def N_c(c, i, j, t, e, n=3):
             vicinity = n - _i + 1
             break
 
+    # TODO can be simplified with euclidean distance (see eta_c function)
     for _i in range(2, vicinity + 1):
         for v_prev_neighbour in vicinity_neighbours.copy():
             v_neighbours = NEIGHBOURS[v_prev_neighbour]
@@ -205,8 +206,9 @@ def som_test(Y, Y_labels, M_t, kx, ky):
     return results
 
 
-def som_quantization_error(X, M_t, kx, ky):
+def som_evaluate(X, M_t, kx, ky):
     q_error = 0
+    t_error = 0
     m = X.shape[0]
     for l in range(1, m + 1):
         distances = np.zeros((kx, ky))
@@ -215,9 +217,15 @@ def som_quantization_error(X, M_t, kx, ky):
                 distances[ind(i)][ind(j)] = \
                     euclidean_distance(M_t[ind(i)][ind(j)], X[ind(l)])
         c = np.unravel_index(distances.argmin(), distances.shape)
+
         q_error += distances[c[0]][c[1]]
 
-    return q_error / m
+        distances[c[0]][c[1]] = math.inf
+        second_best_c = np.unravel_index(distances.argmin(), distances.shape)
+        if euclidean_distance(np.asarray(c), np.asarray(second_best_c)) >= 2:
+            t_error += 1
+
+    return q_error / m, t_error / m
 
 
 def som_draw(results, kx, ky):
@@ -291,8 +299,12 @@ if __name__ == '__main__':
     # SOM in action
     # ------------------------------------
     M_trained = som_train(X, M, epochs, kx, ky)
-    q_error = som_quantization_error(X, M_trained, kx, ky)
+
+    q_error, t_error = som_evaluate(X, M_trained, kx, ky)
     print('Quantization error: ', q_error)
+    print('Topographic error: ', t_error)
+
     results = som_test(Y, Y_labels, M_trained, kx, ky)
+
     print('\nResulting grid:\n')
     som_draw(results, kx, ky)
