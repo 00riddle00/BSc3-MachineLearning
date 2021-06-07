@@ -9,6 +9,7 @@ import math
 import numpy as np
 
 global VICINITIES, H_FN_KIND, ALPHA_FN_KIND
+global SHOW_CLASS_NAMES
 global NEIGHBOURS
 
 
@@ -200,8 +201,8 @@ def som_test(Y, Y_labels, M_t, kx, ky):
                     euclidean_distance(M_t[ind(i)][ind(j)], Y[ind(l)])
         # c = neuron leader
         c = np.unravel_index(distances.argmin(), distances.shape)
-        # (neuron leader tuple): [[input's number, input's class], [..., ...]]
-        results.setdefault(c, []).append([l, Y_labels[l - 1][0]])
+        # (neuron leader tuple): [[input's class, input's number], [..., ...]]
+        results.setdefault(c, []).append([Y_labels[l - 1][0], l])
 
     return results
 
@@ -228,18 +229,24 @@ def som_evaluate(X, M_t, kx, ky):
     return q_error / m, t_error / m
 
 
-def som_draw(results, kx, ky):
-    R = [['' for y in range(ky)] for x in range(kx)]
+def som_draw(results, kx, ky, show_class_names=True):
+
+    # class name is at index 0,
+    # vector number is at index 1
+    index = int(show_class_names is False)
+    separator = index * ','
+
+    grid = [['' for y in range(ky)] for x in range(kx)]
 
     max_len = 0
     for x in range(kx):
         for y in range(ky):
             if (x, y) in results:
-                R[x][y] = ''.join('{}'.format(
-                    item[1]) for item in results[(x, y)])
+                grid[x][y] = f'{separator}'.join('{}'.format(
+                    item[index]) for item in results[(x, y)])
 
-                if len(R[x][y]) > max_len:
-                    max_len = len(R[x][y])
+                if len(grid[x][y]) > max_len:
+                    max_len = len(grid[x][y])
 
     if max_len % 2 == 0:
         print(f"  {''.join(['{1}{0}{1}'.format(item, ' ' * ((max_len + 2) // 2)) for item in range(1, ky + 1)])}")
@@ -249,7 +256,7 @@ def som_draw(results, kx, ky):
 
     print(f"  {'_' * (((max_len + 3) * ky) + 1)}")
 
-    for i, row in enumerate(R, 1):
+    for i, row in enumerate(grid, 1):
         print(f"{i} |{''.join(['{0:_>{1}}_|'.format(item, max_len + 1) for item in row])}")
 
 
@@ -274,12 +281,29 @@ if __name__ == '__main__':
     # ------------------------------------
     # Changeable parameters
     # ------------------------------------
-    kx = 8  # grid rows
-    ky = 8  # grid columns
+    # Grid rows and columns.
+    # Can be a rectangle as well.
+    kx = 8
+    ky = 8
+
     epochs = 10
+
+    # Vicinities parameter denotes how far away does a
+    # neighbour "count" as a neighbour at the beginning of
+    # the SOM learning. This number will be decremented
+    # gradually as the learning progresses and will eventually
+    # reach a value of 1 (only for closest neighbours)
     VICINITIES = 3
+    # One of 'bubble', 'gaussian'
     H_FN_KIND = 'bubble'
+    # One of 'simple_div', 'simple_div_sub', 'power'
     ALPHA_FN_KIND = 'simple_div'
+
+    # Visualization parameter
+    # Set it to true to show input vectors' class names
+    # in the resulting grid. Otherwise the number of
+    # the input vector will be shown.
+    SHOW_CLASS_NAMES = True
 
     # ------------------------------------
     # Set up
@@ -288,7 +312,7 @@ if __name__ == '__main__':
     np.random.seed(0)
     M = np.random.rand(kx, ky, n)  # grid neurons
 
-    # create neighbours grid
+    # for every cell in the grid, indicate its neighbours
     NEIGHBOURS = {
         (p // ky, p % ky): [(p // ky + x_inc - 1, p % ky + y_inc - 1)
                             for x_inc in range(3) if 1 <= p // ky + x_inc <= kx
@@ -306,5 +330,10 @@ if __name__ == '__main__':
 
     results = som_test(Y, Y_labels, M_trained, kx, ky)
 
-    print('\nResulting grid:\n')
-    som_draw(results, kx, ky)
+    print('\nResulting grid:')
+    if SHOW_CLASS_NAMES:
+        print("(showing input vectors' classes)\n")
+    else:
+        print("(showing input vectors' numbers)\n")
+
+    som_draw(results, kx, ky, show_class_names=SHOW_CLASS_NAMES)
