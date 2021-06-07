@@ -8,7 +8,8 @@
 import math
 import numpy as np
 
-global neighbours
+global VICINITIES, H_FN_KIND, ALPHA_FN_KIND
+global NEIGHBOURS
 
 
 # ================
@@ -47,35 +48,35 @@ def get_data():
     data_test_virginica = data_virginica[45:50]
 
     # -------------------- Training data --------------------------
-    given_train_inputs = []
+    train_inputs = []
 
     for element in zip(*[data_train_setosa, data_train_versicolor,
                          data_train_virginica]):
-        given_train_inputs.extend(element)
+        train_inputs.extend(element)
 
-    given_train_inputs = np.array(given_train_inputs, np.float16)
+    train_inputs = np.array(train_inputs, np.float16)
 
-    given_train_outputs = np.ones(135, np.uint8)
+    train_outputs = np.ones(135, np.uint8)
 
     # every second element is of class 1
-    given_train_outputs[1::3] = 2
-    given_train_outputs[2::3] = 3
-    given_train_outputs = given_train_outputs.reshape(1, -1).T
+    train_outputs[1::3] = 2
+    train_outputs[2::3] = 3
+    train_outputs = train_outputs.reshape(1, -1).T
 
     # -------------------- Testing data ---------------------------
-    given_test_inputs = np.array(np.concatenate((
-        data_test_setosa, data_test_versicolor, data_test_virginica, data)),
+    test_inputs = np.array(np.concatenate((
+        data_test_setosa, data_test_versicolor, data_test_virginica)),
         np.float16)
 
-    given_test_outputs = np.ones(15, np.uint8)
-    given_test_outputs[5:10] = 2
-    given_test_outputs[10:] = 3
-    given_test_outputs = given_test_outputs.reshape(1, -1).T
+    test_outputs = np.ones(15, np.uint8)
+    test_outputs[5:10] = 2
+    test_outputs[10:] = 3
+    test_outputs = test_outputs.reshape(1, -1).T
 
-    return [given_train_inputs,
-            given_train_outputs,
-            given_test_inputs,
-            given_test_outputs]
+    return [train_inputs,
+            train_outputs,
+            test_inputs,
+            test_outputs]
 
 
 # =========================
@@ -85,15 +86,17 @@ def get_data():
 # learning rate function
 # @param t - current iteration number
 # @param T - total number of iterations (epochs)
-def alpha_fn(t, T, kind=1):
-    if kind not in [1, 2, 3]:
-        raise ValueError("kind must be one of 1, 2, 3")
-    if kind == 1:
+def alpha_fn(t, T, kind='simple_div'):
+    kinds = ['simple_div', 'simple_div_sub', 'power']
+    if kind == kinds[0]:
         return 1 / t
-    elif kind == 2:
+    elif kind == kinds[1]:
         return 1 - (t / T)
-    else:
+    elif kind == kinds[2]:
         return math.pow(0.005, (t / T))
+    else:
+        if kind not in kinds:
+            raise ValueError(f"alpha_fn must be one of {', '.join([kind for kind in kinds])}")
 
 
 def eta_c(c, ij):
@@ -106,11 +109,11 @@ def eta_c(c, ij):
 
 # check if (i,j) is in a vicinity to c
 def N_c(c, i, j, t, e, n=3):
-    global neighbours
+    global NEIGHBOURS
 
     vicinity = 0
 
-    vicinity_neighbours = set(neighbours[c])
+    vicinity_neighbours = set(NEIGHBOURS[c])
     vicinity_neighbours.add(c)
 
     if (i, j) in vicinity_neighbours:
@@ -123,7 +126,7 @@ def N_c(c, i, j, t, e, n=3):
 
     for _i in range(2, vicinity + 1):
         for v_prev_neighbour in vicinity_neighbours.copy():
-            v_neighbours = neighbours[v_prev_neighbour]
+            v_neighbours = NEIGHBOURS[v_prev_neighbour]
             for v_neighbour in v_neighbours:
                 vicinity_neighbours.add(v_neighbour)
                 if (i, j) == v_neighbour:
@@ -137,27 +140,32 @@ def N_c(c, i, j, t, e, n=3):
 # @params i,j - indices (1-indexed)
 # @param t - current iteration number
 # @param e - total number of iterations (epochs)
-def h(c, i, j, t, e, kind='bubble'):
-    if kind not in ['bubble', 'gaussian']:
-        raise ValueError("kind must be one of 'bubble', 'gaussian'")
-    if kind == 'bubble':
-        if N_c(c, i, j, t, e):
-            return alpha_fn(t, e)
+def h_fn(c, i, j, t, e, kind='bubble'):
+    global VICINITIES, ALPHA_FN_KIND
+    kinds = ['bubble', 'gaussian']
+    if kind == kinds[0]:
+        if N_c(c, i, j, t, e, n=VICINITIES):
+            return alpha_fn(t, e, kind=ALPHA_FN_KIND)
         else:
             return 0
-    elif kind == 'gaussian':
+    elif kind == kinds[1]:
         Rc = np.asarray(c)
         Rij = np.asarray((i, j))
         nominator = - math.pow(euclidean_distance(Rc, Rij), 2)
         denominator = 2 * math.pow(eta_c(Rc, Rij), 2)
-        return alpha_fn(t, e) * np.exp(nominator / denominator)
+        return alpha_fn(t, e, kind=ALPHA_FN_KIND) * np.exp(nominator / denominator)
+    else:
+        raise ValueError(f"h_fn must be one of {', '.join([kind for kind in kinds])}")
 
 
 def som_train(X, M, e, kx, ky):
-    distances = np.zeros((kx, ky))
+    global H_FN_KIND
+    m = X.shape[0]  # no of input vectors
+    print(f'Learning...')
     for t in range(1, e + 1):
         print(f'Epoch {t}')
         for l in range(1, m + 1):  # for every input vector 'l'
+            distances = np.zeros((kx, ky))
             for i in range(1, kx + 1):
                 for j in range(1, ky + 1):
                     # calculate euclidean distance
@@ -169,8 +177,50 @@ def som_train(X, M, e, kx, ky):
                 for j in range(1, ky + 1):
                     # Update neurons using SOM learning rule
                     Mij = M[ind(i)][ind(j)]
-                    M[ind(i)][ind(j)] = Mij + h(c, ind(i), ind(j), t, e) * (X[ind(l)] - Mij)
+                    M[ind(i)][ind(j)] = Mij + h_fn(c, ind(i), ind(j), t, e, kind=H_FN_KIND) * (X[ind(l)] - Mij)
+    print('Done.\n')
     return M
+
+
+def som_test(Y, Y_labels, M_t, kx, ky):
+    m = Y.shape[0]  # no of input vectors
+    results = {}
+    for l in range(1, m + 1):  # for every input vector 'l'
+        distances = np.zeros((kx, ky))
+        for i in range(1, kx + 1):
+            for j in range(1, ky + 1):
+                # calculate euclidean distance
+                distances[ind(i)][ind(j)] = \
+                    euclidean_distance(M_t[ind(i)][ind(j)], Y[ind(l)])
+        # c = neuron leader
+        c = np.unravel_index(distances.argmin(), distances.shape)
+        # (neuron leader tuple): [[input's number, input's class], [..., ...]]
+        results.setdefault(c, []).append([l, Y_labels[l - 1][0]])
+
+    return results
+
+
+def som_draw(results, kx, ky):
+    R = [['' for y in range(ky)] for x in range(kx)]
+
+    max_len = 0
+    for x in range(kx):
+        for y in range(ky):
+            if (x, y) in results:
+                R[x][y] = ''.join('{}'.format(item[1]) for item in results[(x, y)])
+                if len(R[x][y]) > max_len:
+                    max_len = len(R[x][y])
+
+    if max_len % 2 == 0:
+        print(f"  {''.join(['{1}{0}{1}'.format(item, ' ' * ((max_len + 2) // 2)) for item in range(1, ky + 1)])}")
+    else:
+        print(
+            f"  {''.join(['{1}{0}{2}'.format(item, ' ' * ((max_len + 2) // 2 + 1), ' ' * ((max_len + 2) // 2)) for item in range(1, ky + 1)])}")
+
+    print(f"  {'_' * (((max_len + 3) * ky) + 1)}")
+
+    for i, row in enumerate(R, 1):
+        print(f"{i} |{''.join(['{0:_>{1}}_|'.format(item, max_len + 1) for item in row])}")
 
 
 # =========================
@@ -179,29 +229,46 @@ def som_train(X, M, e, kx, ky):
 if __name__ == '__main__':
     data = get_data()
 
-    # train inputs (vectors)
+    # ------------------------------------
+    # Set inputs
+    # ------------------------------------
+    # train inputs
     X = data[0]
     X = np.delete(X, 4, axis=1)
 
-    test_inputs = data[2]
-    test_labels = data[3]
+    # test inputs and labels
+    Y = data[2]
+    Y = np.delete(Y, 4, axis=1)
+    Y_labels = data[3]
 
-    m = X.shape[0]  # no of input vectors
-    n = X.shape[1]  # how many attributes the input vector has
-
+    # ------------------------------------
+    # Changeable parameters
+    # ------------------------------------
     kx = 8  # grid rows
     ky = 8  # grid columns
+    epochs = 5
+    VICINITIES = 3
+    H_FN_KIND = 'bubble'
+    ALPHA_FN_KIND = 'simple_div'
+
+    # ------------------------------------
+    # Set up
+    # ------------------------------------
+    n = X.shape[1]  # how many attributes the input vector has
     np.random.seed(0)
     M = np.random.rand(kx, ky, n)  # grid neurons
 
-    epochs = 20
-
     # create neighbours grid
-    neighbours = {
+    NEIGHBOURS = {
         (p // ky, p % ky): [(p // ky + x_inc - 1, p % ky + y_inc - 1)
                             for x_inc in range(3) if 1 <= p // ky + x_inc <= kx
                             for y_inc in range(3) if 1 <= p % ky + y_inc <= ky and not y_inc == x_inc == 1]
         for p in range(kx * ky)}
 
-    trained_M = som_train(X, M, epochs, kx, ky)
-    print(trained_M)
+    # ------------------------------------
+    # SOM in action
+    # ------------------------------------
+    M_trained = som_train(X, M, epochs, kx, ky)
+    results = som_test(Y, Y_labels, M_trained, kx, ky)
+    print('Resulting grid:\n')
+    som_draw(results, kx, ky)
