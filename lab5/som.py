@@ -96,7 +96,8 @@ def alpha_fn(t, T, kind='simple_div'):
         return math.pow(0.005, (t / T))
     else:
         if kind not in kinds:
-            raise ValueError(f"alpha_fn must be one of {', '.join([kind for kind in kinds])}")
+            raise ValueError(f"alpha_fn must be one of "
+                             f"{', '.join([kind for kind in kinds])}")
 
 
 def eta_c(c, ij):
@@ -151,11 +152,12 @@ def h_fn(c, i, j, t, e, kind='bubble'):
     elif kind == kinds[1]:
         Rc = np.asarray(c)
         Rij = np.asarray((i, j))
-        nominator = - math.pow(euclidean_distance(Rc, Rij), 2)
-        denominator = 2 * math.pow(eta_c(Rc, Rij), 2)
-        return alpha_fn(t, e, kind=ALPHA_FN_KIND) * np.exp(nominator / denominator)
+        nom = - math.pow(euclidean_distance(Rc, Rij), 2)
+        denom = 2 * math.pow(eta_c(Rc, Rij), 2)
+        return alpha_fn(t, e, kind=ALPHA_FN_KIND) * np.exp(nom / denom)
     else:
-        raise ValueError(f"h_fn must be one of {', '.join([kind for kind in kinds])}")
+        raise ValueError(f"h_fn must be one of "
+                         f"{', '.join([kind for kind in kinds])}")
 
 
 def som_train(X, M, e, kx, ky):
@@ -177,7 +179,10 @@ def som_train(X, M, e, kx, ky):
                 for j in range(1, ky + 1):
                     # Update neurons using SOM learning rule
                     Mij = M[ind(i)][ind(j)]
-                    M[ind(i)][ind(j)] = Mij + h_fn(c, ind(i), ind(j), t, e, kind=H_FN_KIND) * (X[ind(l)] - Mij)
+                    M[ind(i)][ind(j)] = \
+                        Mij + \
+                        h_fn(c, ind(i), ind(j), t, e, kind=H_FN_KIND) \
+                        * (X[ind(l)] - Mij)
     print('Done.\n')
     return M
 
@@ -207,7 +212,9 @@ def som_draw(results, kx, ky):
     for x in range(kx):
         for y in range(ky):
             if (x, y) in results:
-                R[x][y] = ''.join('{}'.format(item[1]) for item in results[(x, y)])
+                R[x][y] = ''.join('{}'.format(
+                    item[1]) for item in results[(x, y)])
+
                 if len(R[x][y]) > max_len:
                     max_len = len(R[x][y])
 
@@ -246,7 +253,7 @@ if __name__ == '__main__':
     # ------------------------------------
     kx = 8  # grid rows
     ky = 8  # grid columns
-    epochs = 5
+    epochs = 10
     VICINITIES = 3
     H_FN_KIND = 'bubble'
     ALPHA_FN_KIND = 'simple_div'
