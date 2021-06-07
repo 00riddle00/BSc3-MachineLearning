@@ -9,9 +9,9 @@ import math
 import numpy as np
 
 global VICINITIES, H_FN_KIND, ALPHA_FN_KIND
+global RANDOM_SEED
 global SHOW_CLASS_NAMES
 global NEIGHBOURS
-
 
 # ================
 # Helper functions
@@ -89,6 +89,7 @@ def get_data():
 # @param T - total number of iterations (epochs)
 def alpha_fn(t, T, kind='simple_div'):
     kinds = ['simple_div', 'simple_div_sub', 'power']
+
     if kind == kinds[0]:
         return 1 / t
     elif kind == kinds[1]:
@@ -126,7 +127,8 @@ def N_c(c, i, j, t, e, n=3):
             vicinity = n - _i + 1
             break
 
-    # TODO can be simplified with euclidean distance (see eta_c function)
+    # TODO can be simplified using euclidean
+    # distance (as in 'eta_c' function)
     for _i in range(2, vicinity + 1):
         for v_prev_neighbour in vicinity_neighbours.copy():
             v_neighbours = NEIGHBOURS[v_prev_neighbour]
@@ -143,9 +145,12 @@ def N_c(c, i, j, t, e, n=3):
 # @params i,j - indices (1-indexed)
 # @param t - current iteration number
 # @param e - total number of iterations (epochs)
+# @param kind - one of 'bubble', 'gaussian'
 def h_fn(c, i, j, t, e, kind='bubble'):
     global VICINITIES, ALPHA_FN_KIND
+
     kinds = ['bubble', 'gaussian']
+
     if kind == kinds[0]:
         if N_c(c, i, j, t, e, n=VICINITIES):
             return alpha_fn(t, e, kind=ALPHA_FN_KIND)
@@ -164,12 +169,16 @@ def h_fn(c, i, j, t, e, kind='bubble'):
 
 def som_train(X, M, e, kx, ky):
     global H_FN_KIND
+
     m = X.shape[0]  # no of input vectors
     print(f'Learning...')
+
     for t in range(1, e + 1):
         print(f'Epoch {t}')
+
         for l in range(1, m + 1):  # for every input vector 'l'
             distances = np.zeros((kx, ky))
+
             for i in range(1, kx + 1):
                 for j in range(1, ky + 1):
                     # calculate euclidean distance
@@ -177,6 +186,7 @@ def som_train(X, M, e, kx, ky):
                         euclidean_distance(M[ind(i)][ind(j)], X[ind(l)])
             # c = neuron leader
             c = np.unravel_index(distances.argmin(), distances.shape)
+
             for i in range(1, kx + 1):
                 for j in range(1, ky + 1):
                     # Update neurons using SOM learning rule
@@ -192,6 +202,7 @@ def som_train(X, M, e, kx, ky):
 def som_test(Y, Y_labels, M_t, kx, ky):
     m = Y.shape[0]  # no of input vectors
     results = {}
+
     for l in range(1, m + 1):  # for every input vector 'l'
         distances = np.zeros((kx, ky))
         for i in range(1, kx + 1):
@@ -211,6 +222,7 @@ def som_evaluate(X, M_t, kx, ky):
     q_error = 0
     t_error = 0
     m = X.shape[0]
+
     for l in range(1, m + 1):
         distances = np.zeros((kx, ky))
         for i in range(1, kx + 1):
@@ -230,8 +242,7 @@ def som_evaluate(X, M_t, kx, ky):
 
 
 def som_draw(results, kx, ky, show_class_names=True):
-
-    # class name is at index 0,
+    # in results, class name is at index 0,
     # vector number is at index 1
     index = int(show_class_names is False)
     separator = index * ','
@@ -239,25 +250,30 @@ def som_draw(results, kx, ky, show_class_names=True):
     grid = [['' for y in range(ky)] for x in range(kx)]
 
     max_len = 0
+
     for x in range(kx):
         for y in range(ky):
             if (x, y) in results:
                 grid[x][y] = f'{separator}'.join('{}'.format(
-                    item[index]) for item in results[(x, y)])
+                    result[index]) for result in results[(x, y)])
 
                 if len(grid[x][y]) > max_len:
                     max_len = len(grid[x][y])
 
+    # required for tidy column number printing
     if max_len % 2 == 0:
-        print(f"  {''.join(['{1}{0}{1}'.format(item, ' ' * ((max_len + 2) // 2)) for item in range(1, ky + 1)])}")
+        print(
+            f"  {''.join(['{1}{0}{1}'.format(col_number, ' ' * ((max_len + 2) // 2)) for col_number in range(1, ky + 1)])}")
     else:
         print(
-            f"  {''.join(['{1}{0}{2}'.format(item, ' ' * ((max_len + 2) // 2 + 1), ' ' * ((max_len + 2) // 2)) for item in range(1, ky + 1)])}")
+            f"  {''.join(['{1}{0}{2}'.format(col_number, ' ' * ((max_len + 2) // 2 + 1), ' ' * ((max_len + 2) // 2)) for col_number in range(1, ky + 1)])}")
 
+    # print grid's upper bar
     print(f"  {'_' * (((max_len + 3) * ky) + 1)}")
 
+    # print grid's rows
     for i, row in enumerate(grid, 1):
-        print(f"{i} |{''.join(['{0:_>{1}}_|'.format(item, max_len + 1) for item in row])}")
+        print(f"{i} |{''.join(['{0:_>{1}}_|'.format(grid_value, max_len + 1) for grid_value in row])}")
 
 
 # =========================
@@ -305,11 +321,15 @@ if __name__ == '__main__':
     # the input vector will be shown.
     SHOW_CLASS_NAMES = True
 
+    # choose for different random
+    # filling of the initial grid
+    RANDOM_SEED = 0
+
     # ------------------------------------
     # Set up
     # ------------------------------------
     n = X.shape[1]  # how many attributes the input vector has
-    np.random.seed(0)
+    np.random.seed(RANDOM_SEED)
     M = np.random.rand(kx, ky, n)  # grid neurons
 
     # for every cell in the grid, indicate its neighbours
