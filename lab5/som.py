@@ -33,6 +33,13 @@ def euclidean_distance(a, b):
 # =================================================================
 # Reading from a file
 # =================================================================
+# @param test_data_percentage - choose what part (percentage) of data
+#                               will be use for training
+# @param all:
+#      True -  use all data for training and the same data
+#              for testing as well. Parameter test_data_percentage
+#              is ignored in this case
+#      False - get separate training and testing data
 def get_data(test_data_percentage=10, all=False):
     if not all in [True, False]:
         raise ValueError("'all' parameter should be either True or False")
@@ -342,13 +349,8 @@ def som_draw(results, kx, ky, show_class_names=True):
 # Main code
 # =========================
 if __name__ == '__main__':
-    # choose one function out of two:
-    #
-    # get_data()     - get separate training and testing data
-    #                  (see function itself for train/test distribution).
-    # get_data_all() - use all data for training and the same data for
-    #                  testing as well.
-    data = get_data()
+
+    data = get_data(test_data_percentage=10, all=False)
 
     # ------------------------------------
     # Set inputs
@@ -396,7 +398,7 @@ if __name__ == '__main__':
 
     # Set it to true to print out SOM neurons' weights
     # and winner neurons for every input vector
-    VERBOSE_OUTPUT = False
+    VERBOSE_OUTPUT = True
 
     # ------------------------------------
     # Set up
