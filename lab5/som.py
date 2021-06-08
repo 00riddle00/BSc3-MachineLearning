@@ -348,7 +348,7 @@ if __name__ == '__main__':
     #                  (see function itself for train/test distribution).
     # get_data_all() - use all data for training and the same data for
     #                  testing as well.
-    data = get_data(all=True)
+    data = get_data()
 
     # ------------------------------------
     # Set inputs
