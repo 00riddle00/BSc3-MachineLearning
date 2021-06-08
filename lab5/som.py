@@ -60,7 +60,7 @@ def get_data():
 
     train_outputs = np.ones(135, np.uint8)
 
-    # every second element is of class 1
+    # classes 1, 2, 3, repeat for every three elements
     train_outputs[1::3] = 2
     train_outputs[2::3] = 3
     train_outputs = train_outputs.reshape(1, -1).T
@@ -74,6 +74,38 @@ def get_data():
     test_outputs[5:10] = 2
     test_outputs[10:] = 3
     test_outputs = test_outputs.reshape(1, -1).T
+
+    return [train_inputs,
+            train_outputs,
+            test_inputs,
+            test_outputs]
+
+
+def get_data_all():
+    data = np.genfromtxt('dataset/iris.data', delimiter=',')
+
+    data_train_setosa = data[:50]
+    data_train_versicolor = data[50:100]
+    data_train_virginica = data[100:150]
+
+    # -------------------- Training data --------------------------
+    train_inputs = []
+
+    for element in zip(*[data_train_setosa, data_train_versicolor,
+                         data_train_virginica]):
+        train_inputs.extend(element)
+
+    train_inputs = np.array(train_inputs, np.float16)
+
+    train_outputs = np.ones(150, np.uint8)
+
+    # classes 1, 2, 3, repeat for every three elements
+    train_outputs[1::3] = 2
+    train_outputs[2::3] = 3
+    train_outputs = train_outputs.reshape(1, -1).T
+
+    test_inputs = train_inputs.copy()
+    test_outputs = train_outputs.copy()
 
     return [train_inputs,
             train_outputs,
@@ -281,6 +313,12 @@ def som_draw(results, kx, ky, show_class_names=True):
 # Main code
 # =========================
 if __name__ == '__main__':
+    # choose one function out of two:
+    #
+    # get_data()     - get separate training and testing data
+    #                  (see function itself for train/test distribution).
+    # get_data_all() - use all data for training and the same data for
+    #                  testing as well.
     data = get_data()
 
     # ------------------------------------
