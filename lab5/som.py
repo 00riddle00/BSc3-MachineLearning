@@ -33,21 +33,80 @@ def euclidean_distance(a, b):
 # =================================================================
 # Reading from a file
 # =================================================================
-def get_data():
+def get_data(test_data_percentage=10):
+
+    if not isinstance(test_data_percentage, int):
+        raise ValueError("test_data_percentage parameter should be an integer")
+    elif test_data_percentage not in range(1, 51):
+        raise ValueError("test_data_percentage values can only be between 1 and 50")
+
     data = np.genfromtxt('dataset/iris.data', delimiter=',')
 
     data_setosa = data[:50]
     data_versicolor = data[50:100]
     data_virginica = data[100:150]
 
-    data_train_setosa = data_setosa[:45]
-    data_test_setosa = data_setosa[45:50]
+    # ---------------------------------------------------------------
+    train_data_percentage = 100 - test_data_percentage
+    train_data_count = int(150 * train_data_percentage / 100)
+    train_data_div_3 = int(train_data_count / 3)
+    train_data_each = [train_data_div_3, train_data_div_3, train_data_count - (2 * train_data_div_3)]
+    tmp = train_data_each
 
-    data_train_versicolor = data_versicolor[:45]
-    data_test_versicolor = data_versicolor[45:50]
+    data_train_setosa = data_setosa[:tmp[0]]
+    data_test_setosa = data_setosa[tmp[0]:]
 
-    data_train_virginica = data_virginica[:45]
-    data_test_virginica = data_virginica[45:50]
+    data_train_versicolor = data_versicolor[:tmp[1]]
+    data_test_versicolor = data_versicolor[tmp[1]:]
+
+    data_train_virginica = data_virginica[:tmp[2]]
+    data_test_virginica = data_virginica[tmp[2]:]
+
+    # ---------------------------------------------------------------
+    print('\n=================== DEBUG information: ========================\n')
+    # ---------------------------------------------------------------
+    print('train data: ')
+    print(train_data_percentage)
+    print(train_data_count)
+    print(train_data_each)
+    print()
+    print(data_train_setosa.shape)
+    print(data_train_versicolor.shape)
+    print(data_train_virginica.shape)
+    print()
+    print('data train setosa:')
+    print(data_train_setosa)
+    print()
+    print('data train versicolor:')
+    print(data_train_versicolor)
+    print()
+    print('data train virginica:')
+    print(data_train_virginica)
+    # ---------------------------------------------------------------
+
+    # ---------------------------------------------------------------
+    test_data_each = [data_test_setosa.shape[0], data_test_versicolor.shape[0], data_test_virginica.shape[0]]
+    test_data_count = sum(test_data_each)
+    # ---------------------------------------------------------------
+    print('test_data: ')
+    print(test_data_percentage)
+    print(test_data_count)
+    print(test_data_each)
+    print()
+    print(data_test_setosa.shape)
+    print(data_test_versicolor.shape)
+    print(data_test_virginica.shape)
+    print()
+    print('data test setosa:')
+    print(data_test_setosa)
+    print()
+    print('data test versicolor:')
+    print(data_test_versicolor)
+    print()
+    print('data test virginica:')
+    print(data_test_virginica)
+    print('\n===============================================================\n')
+    # ---------------------------------------------------------------
 
     # -------------------- Training data --------------------------
     train_inputs = []
@@ -58,7 +117,7 @@ def get_data():
 
     train_inputs = np.array(train_inputs, np.float16)
 
-    train_outputs = np.ones(135, np.uint8)
+    train_outputs = np.ones(train_data_count, np.uint8)
 
     # classes 1, 2, 3, repeat for every three elements
     train_outputs[1::3] = 2
@@ -70,10 +129,17 @@ def get_data():
         data_test_setosa, data_test_versicolor, data_test_virginica)),
         np.float16)
 
-    test_outputs = np.ones(15, np.uint8)
-    test_outputs[5:10] = 2
-    test_outputs[10:] = 3
+    test_outputs = np.ones(test_data_count, np.uint8)
+    tmp = test_data_each
+
+    test_outputs[tmp[0]:tmp[0] + tmp[1]] = 2
+    test_outputs[tmp[0] + tmp[1]:] = 3
     test_outputs = test_outputs.reshape(1, -1).T
+
+    print(train_inputs)
+    print(train_outputs)
+    print(test_inputs)
+    print(test_outputs)
 
     return [train_inputs,
             train_outputs,
@@ -367,7 +433,7 @@ if __name__ == '__main__':
 
     # Set it to true to print out SOM neurons' weights
     # and winner neurons for every input vector
-    VERBOSE_OUTPUT = True
+    VERBOSE_OUTPUT = False
 
     # ------------------------------------
     # Set up
