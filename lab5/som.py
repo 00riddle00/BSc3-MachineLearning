@@ -33,7 +33,42 @@ def euclidean_distance(a, b):
 # =================================================================
 # Reading from a file
 # =================================================================
-def get_data(test_data_percentage=10):
+def get_data(test_data_percentage=10, all=False):
+    if not all in [True, False]:
+        raise ValueError("'all' parameter should be either True or False")
+
+    data = np.genfromtxt('dataset/iris.data', delimiter=',')
+
+    if all:
+        data_train_setosa = data[:50]
+        data_train_versicolor = data[50:100]
+        data_train_virginica = data[100:150]
+
+        # -------------------- Training data --------------------------
+        train_inputs = []
+
+        for element in zip(*[data_train_setosa, data_train_versicolor,
+                             data_train_virginica]):
+            train_inputs.extend(element)
+
+        train_inputs = np.array(train_inputs, np.float16)
+
+        train_outputs = np.ones(150, np.uint8)
+
+        # classes 1, 2, 3, repeat for every three elements
+        train_outputs[1::3] = 2
+        train_outputs[2::3] = 3
+        train_outputs = train_outputs.reshape(1, -1).T
+
+        test_inputs = train_inputs.copy()
+        test_outputs = train_outputs.copy()
+
+        return [train_inputs,
+                train_outputs,
+                test_inputs,
+                test_outputs]
+
+    # here start the case when all = False
     if not isinstance(test_data_percentage, int):
         raise ValueError("test_data_percentage parameter should be an integer")
     elif test_data_percentage not in range(1, 51):
@@ -100,38 +135,6 @@ def get_data(test_data_percentage=10):
     test_outputs[tmp[0]:tmp[0] + tmp[1]] = 2
     test_outputs[tmp[0] + tmp[1]:] = 3
     test_outputs = test_outputs.reshape(1, -1).T
-
-    return [train_inputs,
-            train_outputs,
-            test_inputs,
-            test_outputs]
-
-
-def get_data_all():
-    data = np.genfromtxt('dataset/iris.data', delimiter=',')
-
-    data_train_setosa = data[:50]
-    data_train_versicolor = data[50:100]
-    data_train_virginica = data[100:150]
-
-    # -------------------- Training data --------------------------
-    train_inputs = []
-
-    for element in zip(*[data_train_setosa, data_train_versicolor,
-                         data_train_virginica]):
-        train_inputs.extend(element)
-
-    train_inputs = np.array(train_inputs, np.float16)
-
-    train_outputs = np.ones(150, np.uint8)
-
-    # classes 1, 2, 3, repeat for every three elements
-    train_outputs[1::3] = 2
-    train_outputs[2::3] = 3
-    train_outputs = train_outputs.reshape(1, -1).T
-
-    test_inputs = train_inputs.copy()
-    test_outputs = train_outputs.copy()
 
     return [train_inputs,
             train_outputs,
@@ -345,7 +348,7 @@ if __name__ == '__main__':
     #                  (see function itself for train/test distribution).
     # get_data_all() - use all data for training and the same data for
     #                  testing as well.
-    data = get_data()
+    data = get_data(all=True)
 
     # ------------------------------------
     # Set inputs
