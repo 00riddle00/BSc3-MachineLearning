@@ -264,17 +264,17 @@ def som_draw(results, kx, ky, show_class_names=True):
     # required for tidy column number printing
     if max_len % 2 == 0:
         print(
-            f"  {''.join(['{1}{0}{1}'.format(col_number, ' ' * ((max_len + 2) // 2)) for col_number in range(1, ky + 1)])}")
+            f"   {''.join(['{1}{0}{1}'.format(col_number, ' ' * (((max_len + 2) // 2) - int(col_number > 10))) for col_number in range(1, ky + 1)])}")
     else:
         print(
-            f"  {''.join(['{1}{0}{2}'.format(col_number, ' ' * ((max_len + 2) // 2 + 1), ' ' * ((max_len + 2) // 2)) for col_number in range(1, ky + 1)])}")
+            f"   {''.join(['{1}{0}{2}'.format(col_number, ' ' * (((max_len + 2) // 2 + 1) - int(col_number > 10)), ' ' * (((max_len + 2) // 2) - int(col_number > 10))) for col_number in range(1, ky + 1)])}")
 
     # print grid's upper bar
-    print(f"  {'_' * (((max_len + 3) * ky) + 1)}")
+    print(f"   {'_' * (((max_len + 3) * ky) + 1)}")
 
     # print grid's rows
     for i, row in enumerate(grid, 1):
-        print(f"{i} |{''.join(['{0:_>{1}}_|'.format(grid_value, max_len + 1) for grid_value in row])}")
+        print(f"{str(i).rjust(2)} |{''.join(['{0:_>{1}}_|'.format(grid_value, max_len + 1) for grid_value in row])}")
 
 
 # =========================
@@ -300,8 +300,8 @@ if __name__ == '__main__':
     # ------------------------------------
     # Grid size (rows and columns).
     # Can be a rectangle as well.
-    kx = 8
-    ky = 8
+    kx = 10
+    ky = 10
 
     epochs = 10
 
