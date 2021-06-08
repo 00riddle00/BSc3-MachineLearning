@@ -153,18 +153,23 @@ def get_data(test_data_percentage=10, all=False):
 # Main program functions
 # =========================
 
-# learning rate function
-# @param t - current iteration number
-# @param T - total number of iterations (epochs)
-def alpha_fn(t, T, kind='simple_div'):
+# also known as 'learning rate'
+# @param e - total number of epochs
+# @param m - total number of input vectors (and hence - iterations)
+# @param t - current epoch number
+# @param l - current input vector number (=iteration number in the current epoch)
+# @param kind - one of 'simple_div', 'simple_div_sub', 'power'
+def alpha_fn(e, m, t, l, kind='simple_div'):
     kinds = ['simple_div', 'simple_div_sub', 'power']
+    T_total = e * m  # total number of iterations (considering all the epochs)
+    T_current = t * l  # number of the current iteration (out of T_total)
 
     if kind == kinds[0]:
-        return 1 / t
+        return 1 / T_current
     elif kind == kinds[1]:
-        return 1 - (t / T)
+        return 1 - (T_current / T_total)
     elif kind == kinds[2]:
-        return math.pow(0.005, (t / T))
+        return math.pow(0.005, (T_current / T_total))
     else:
         if kind not in kinds:
             raise ValueError(f"alpha_fn must be one of "
@@ -196,6 +201,8 @@ def N_c(c, i, j, t, e, n=3):
             vicinity = n - _i + 1
             break
 
+    # print('V=', vicinity)
+
     # TODO can be simplified using euclidean
     # distance (as in 'eta_c' function)
     for _i in range(2, vicinity + 1):
@@ -212,17 +219,19 @@ def N_c(c, i, j, t, e, n=3):
 # neighbour function
 # @param c - neuron leader
 # @params i,j - indices (1-indexed)
-# @param t - current iteration number
-# @param e - total number of iterations (epochs)
+# @param e - total number of epochs
+# @param m - total number of input vectors (and hence - iterations)
+# @param t - current epoch number
+# @param l - current input vector number (=iteration number in the current epoch)
 # @param kind - one of 'bubble', 'gaussian'
-def h_fn(c, i, j, t, e, kind='bubble'):
+def h_fn(c, i, j, e, m, t, l, kind='bubble'):
     global VICINITIES, ALPHA_FN_KIND
 
     kinds = ['bubble', 'gaussian']
 
     if kind == kinds[0]:
         if N_c(c, i, j, t, e, n=VICINITIES):
-            return alpha_fn(t, e, kind=ALPHA_FN_KIND)
+            return alpha_fn(e, m, t, l, kind=ALPHA_FN_KIND)
         else:
             return 0
     elif kind == kinds[1]:
@@ -230,7 +239,7 @@ def h_fn(c, i, j, t, e, kind='bubble'):
         Rij = np.asarray((i, j))
         nom = - math.pow(euclidean_distance(Rc, Rij), 2)
         denom = 2 * math.pow(eta_c(Rc, Rij), 2)
-        return alpha_fn(t, e, kind=ALPHA_FN_KIND) * np.exp(nom / denom)
+        return alpha_fn(e, m, t, l, kind=ALPHA_FN_KIND) * np.exp(nom / denom)
     else:
         raise ValueError(f"h_fn must be one of "
                          f"{', '.join([kind for kind in kinds])}")
@@ -262,7 +271,7 @@ def som_train(X, M, e, kx, ky):
                     Mij = M[ind(i)][ind(j)]
                     M[ind(i)][ind(j)] = \
                         Mij + \
-                        h_fn(c, ind(i), ind(j), t, e, kind=H_FN_KIND) \
+                        h_fn(c, ind(i), ind(j), e, m, t, l, kind=H_FN_KIND) \
                         * (X[ind(l)] - Mij)
     print('Done.\n')
     return M
