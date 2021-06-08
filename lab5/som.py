@@ -34,11 +34,11 @@ def euclidean_distance(a, b):
 # Reading from a file
 # =================================================================
 def get_data(test_data_percentage=10):
-
     if not isinstance(test_data_percentage, int):
         raise ValueError("test_data_percentage parameter should be an integer")
     elif test_data_percentage not in range(1, 51):
-        raise ValueError("test_data_percentage values can only be between 1 and 50")
+        raise ValueError("test_data_percentage values "
+                         "can only be between 1 and 50")
 
     data = np.genfromtxt('dataset/iris.data', delimiter=',')
 
@@ -49,8 +49,13 @@ def get_data(test_data_percentage=10):
     # ---------------------------------------------------------------
     train_data_percentage = 100 - test_data_percentage
     train_data_count = int(150 * train_data_percentage / 100)
+
     train_data_div_3 = int(train_data_count / 3)
-    train_data_each = [train_data_div_3, train_data_div_3, train_data_count - (2 * train_data_div_3)]
+
+    train_data_each = [train_data_div_3,
+                       train_data_div_3,
+                       train_data_count - (2 * train_data_div_3)]
+
     tmp = train_data_each
 
     data_train_setosa = data_setosa[:tmp[0]]
@@ -62,51 +67,11 @@ def get_data(test_data_percentage=10):
     data_train_virginica = data_virginica[:tmp[2]]
     data_test_virginica = data_virginica[tmp[2]:]
 
-    # ---------------------------------------------------------------
-    print('\n=================== DEBUG information: ========================\n')
-    # ---------------------------------------------------------------
-    print('train data: ')
-    print(train_data_percentage)
-    print(train_data_count)
-    print(train_data_each)
-    print()
-    print(data_train_setosa.shape)
-    print(data_train_versicolor.shape)
-    print(data_train_virginica.shape)
-    print()
-    print('data train setosa:')
-    print(data_train_setosa)
-    print()
-    print('data train versicolor:')
-    print(data_train_versicolor)
-    print()
-    print('data train virginica:')
-    print(data_train_virginica)
-    # ---------------------------------------------------------------
+    test_data_each = [data_test_setosa.shape[0],
+                      data_test_versicolor.shape[0],
+                      data_test_virginica.shape[0]]
 
-    # ---------------------------------------------------------------
-    test_data_each = [data_test_setosa.shape[0], data_test_versicolor.shape[0], data_test_virginica.shape[0]]
     test_data_count = sum(test_data_each)
-    # ---------------------------------------------------------------
-    print('test_data: ')
-    print(test_data_percentage)
-    print(test_data_count)
-    print(test_data_each)
-    print()
-    print(data_test_setosa.shape)
-    print(data_test_versicolor.shape)
-    print(data_test_virginica.shape)
-    print()
-    print('data test setosa:')
-    print(data_test_setosa)
-    print()
-    print('data test versicolor:')
-    print(data_test_versicolor)
-    print()
-    print('data test virginica:')
-    print(data_test_virginica)
-    print('\n===============================================================\n')
-    # ---------------------------------------------------------------
 
     # -------------------- Training data --------------------------
     train_inputs = []
@@ -135,11 +100,6 @@ def get_data(test_data_percentage=10):
     test_outputs[tmp[0]:tmp[0] + tmp[1]] = 2
     test_outputs[tmp[0] + tmp[1]:] = 3
     test_outputs = test_outputs.reshape(1, -1).T
-
-    print(train_inputs)
-    print(train_outputs)
-    print(test_inputs)
-    print(test_outputs)
 
     return [train_inputs,
             train_outputs,
