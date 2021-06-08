@@ -161,8 +161,11 @@ def get_data(test_data_percentage=10, all=False):
 # @param kind - one of 'simple_div', 'simple_div_sub', 'power'
 def alpha_fn(e, m, t, l, kind='simple_div'):
     kinds = ['simple_div', 'simple_div_sub', 'power']
-    T_total = e * m  # total number of iterations (considering all the epochs)
-    T_current = t * l  # number of the current iteration (out of T_total)
+
+    # total number of iterations (considering all the epochs)
+    T_total = e * m
+    # number of the current iteration (out of T_total)
+    T_current = t * l
 
     if kind == kinds[0]:
         return 1 / T_current
@@ -185,7 +188,9 @@ def eta_c(c, ij):
 
 
 # check if (i,j) is in a vicinity to c
-def N_c(c, i, j, t, e, n=3):
+# @param m - total number of input vectors (and hence - iterations)
+# @param l - current input vector number (=iteration number in the current epoch)
+def N_c(c, i, j, m, l, n=3):
     global NEIGHBOURS
 
     vicinity = 0
@@ -197,11 +202,9 @@ def N_c(c, i, j, t, e, n=3):
         return True
 
     for _i in range(1, n + 1):
-        if t / e < _i / n:
+        if (l / m) <= (_i / n):
             vicinity = n - _i + 1
             break
-
-    # print('V=', vicinity)
 
     # TODO can be simplified using euclidean
     # distance (as in 'eta_c' function)
@@ -230,7 +233,7 @@ def h_fn(c, i, j, e, m, t, l, kind='bubble'):
     kinds = ['bubble', 'gaussian']
 
     if kind == kinds[0]:
-        if N_c(c, i, j, t, e, n=VICINITIES):
+        if N_c(c, i, j, m, l, n=VICINITIES):
             return alpha_fn(e, m, t, l, kind=ALPHA_FN_KIND)
         else:
             return 0
