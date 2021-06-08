@@ -165,7 +165,7 @@ def alpha_fn(e, m, t, l, kind='simple_div'):
     # total number of iterations (considering all the epochs)
     T_total = e * m
     # number of the current iteration (out of T_total)
-    T_current = t * l
+    T_current = t * m + l
 
     if kind == kinds[0]:
         return 1 / T_current
